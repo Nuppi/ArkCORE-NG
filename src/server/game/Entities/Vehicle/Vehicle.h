@@ -73,6 +73,7 @@ class Vehicle : public TransportBase
         VehicleSeatEntry const* GetSeatForPassenger(Unit const* passenger) const;
 
         void RemovePendingEventsForPassenger(Unit* passenger);
+        bool CheckVehicle();
 
     protected:
         friend class VehicleJoinEvent;
@@ -107,7 +108,6 @@ class Vehicle : public TransportBase
 
         void RemovePendingEvent(VehicleJoinEvent* e);
         void RemovePendingEventsForSeat(int8 seatId);
-        bool HasPendingEventForSeat(int8 seatId) const;
 
     private:
         Unit* _me;                                          ///< The underlying unit with the vehicle kit. Can be player or creature.
@@ -130,6 +130,8 @@ class VehicleJoinEvent : public BasicEvent
         ~VehicleJoinEvent();
         bool Execute(uint64, uint32) override;
         void Abort(uint64) override;
+        
+        bool CheckVehicle();
 
         Vehicle* Target;
         Unit* Passenger;

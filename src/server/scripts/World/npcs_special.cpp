@@ -124,7 +124,7 @@ public:
     {
         npc_air_force_botsAI(Creature* creature) : ScriptedAI(creature)
         {
-            SpawnAssoc = NULL;
+            SpawnAssoc = nullptr;
             SpawnedGUID = 0;
 
             // find the correct spawnhandling
@@ -148,7 +148,7 @@ public:
                 if (!spawnedTemplate)
                 {
                     TC_LOG_ERROR("sql.sql", "TCSR: Creature template entry %u does not exist in DB, which is required by npc_air_force_bots", SpawnAssoc->spawnedCreatureEntry);
-                    SpawnAssoc = NULL;
+                    SpawnAssoc = nullptr;
                     return;
                 }
             }
@@ -168,7 +168,7 @@ public:
             else
             {
                 TC_LOG_ERROR("sql.sql", "TCSR: npc_air_force_bots: wasn't able to spawn Creature %u", SpawnAssoc->spawnedCreatureEntry);
-                SpawnAssoc = NULL;
+                SpawnAssoc = nullptr;
             }
 
             return summoned;
@@ -398,7 +398,7 @@ public:
         return true;
     }
 
-    bool OnQuestComplete(Player* /*player*/, Creature* creature, Quest const* quest) override
+    bool OnQuestObjectiveComplete(Player* /*player*/, Creature* creature, Quest const* quest) override
     {
         if (quest->GetQuestId() == QUEST_CLUCK)
             CAST_AI(npc_chicken_cluck::npc_chicken_cluckAI, creature->AI())->Reset();
@@ -723,7 +723,7 @@ public:
         void Reset() override
         {
             DoctorGUID = 0;
-            Coord = NULL;
+            Coord = nullptr;
 
             //no select
             me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
@@ -1128,7 +1128,7 @@ public:
             if (me->isAttackReady())
             {
                 DoCastVictim(SPELL_DEATHTOUCH, true);
-                me->resetAttackTimer();
+                me->ResetAttackTimer();
             }
         }
     };
@@ -2078,7 +2078,7 @@ public:
 
         GameObject* FindNearestLauncher()
         {
-            GameObject* launcher = NULL;
+            GameObject* launcher = nullptr;
 
             if (isCluster())
             {
@@ -3224,7 +3224,7 @@ public:
         
         void Reset() override
         {
-            m_player = NULL;
+            m_player = nullptr;
             m_events.ScheduleEvent(EVENT_GO_INVISIBLE, 6000);
             m_events.ScheduleEvent(EVENT_CHECK_OWNER, 500);            
         }
@@ -3299,7 +3299,7 @@ public:
 
         void Reset() override
         {
-            m_player = NULL;
+            m_player = nullptr;
         }
 
         void IsSummonedBy(Unit* summoner)
@@ -3397,7 +3397,7 @@ public:
     }
 };
 
-// 55089 55093
+// 55089 55093 55397 55398 
 class npc_fire_juggler_generic : public CreatureScript
 {
 public:
@@ -3405,7 +3405,7 @@ public:
 
     enum eNPC
     {
-        SPELL_JUGGLE_TORCH_AURA = 102905,
+        SPELL_JUGGLE_TORCH_AURA = 46322, //  102905,
         EVENT_START_FIRE_JUGGLING = 101,
     };
 
@@ -3431,8 +3431,9 @@ public:
                 {
                 case EVENT_START_FIRE_JUGGLING:
                 {
-                    me->AddAura(SPELL_JUGGLE_TORCH_AURA, me);
-                    m_events.ScheduleEvent(EVENT_START_FIRE_JUGGLING, 150000);
+                    if (!me->HasAura(SPELL_JUGGLE_TORCH_AURA))
+                        me->AddAura(SPELL_JUGGLE_TORCH_AURA, me);
+                    m_events.ScheduleEvent(EVENT_START_FIRE_JUGGLING, 3000);
                     break;
                 }
                 }
@@ -3489,5 +3490,4 @@ void AddSC_npcs_special()
     new npc_mushroom_43497();
     new npc_t12_fiery_imp();
     new npc_fire_juggler_generic();
-
 }

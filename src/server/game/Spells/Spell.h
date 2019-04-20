@@ -213,6 +213,8 @@ enum SpellEffectHandleMode
     SPELL_EFFECT_HANDLE_HIT_TARGET
 };
 
+static const uint32 SPELL_INTERRUPT_NONPLAYER = 32747;
+
 class Spell
 {
     friend void Unit::SetCurrentCastSpell(Spell* pSpell);
@@ -274,6 +276,8 @@ class Spell
         void EffectHealMaxHealth(SpellEffIndex effIndex);
         void EffectInterruptCast(SpellEffIndex effIndex);
         void EffectSummonObjectWild(SpellEffIndex effIndex);
+        void EffectSummonRaidMarker(SpellEffIndex effIndex);
+        void EffectSummonDynObj(SpellEffIndex effIndex);
         void EffectScriptEffect(SpellEffIndex effIndex);
         void EffectSanctuary(SpellEffIndex effIndex);
         void EffectAddComboPoints(SpellEffIndex effIndex);
@@ -350,6 +354,8 @@ class Spell
         void EffectResurrectWithAura(SpellEffIndex effIndex);
         void EffectCreateAreaTrigger(SpellEffIndex effIndex);
         void EffectTriggerSpell_160(SpellEffIndex effIndex);
+        void EffectUpdatePlayerPhase(SpellEffIndex effIndex);
+        void EffectUpdateZoneAurasAndPhases(SpellEffIndex effIndex);
 
         typedef std::set<Aura*> UsedSpellMods;
 
@@ -408,6 +414,8 @@ class Spell
 
         SpellCastResult CheckItems();
         SpellCastResult CheckRange(bool strict);
+        void GetMinMaxRange(bool strict, float &minRange, float &maxRange);
+        void GetEffectsMinMaxRange(float &minRange, float &maxRange);
         SpellCastResult CheckPower();
         SpellCastResult CheckRuneCost(uint32 runeCostID);
         SpellCastResult CheckCasterAuras() const;
@@ -649,6 +657,7 @@ class Spell
         void CallScriptBeforeHitHandlers();
         void CallScriptOnHitHandlers();
         void CallScriptAfterHitHandlers();
+        void CallScriptDispel();
         void CallScriptObjectAreaTargetSelectHandlers(std::list<WorldObject*>& targets, SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType);
         void CallScriptObjectTargetSelectHandlers(WorldObject*& target, SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType);
         void CallScriptDestinationTargetSelectHandlers(SpellDestination& target, SpellEffIndex effIndex, SpellImplicitTargetInfo const& targetType);

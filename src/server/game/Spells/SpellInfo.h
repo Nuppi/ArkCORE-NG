@@ -301,6 +301,9 @@ private:
     static StaticData _data[TOTAL_SPELL_EFFECTS];
 };
 
+typedef std::vector<SpellEffectInfo const*> SpellEffectInfoVector;
+typedef std::unordered_map<uint32, SpellEffectInfoVector> SpellEffectInfoMap;
+
 class SpellInfo
 {
 public:
@@ -431,6 +434,19 @@ public:
     bool HasAura(AuraType aura) const;
     bool HasAreaAuraEffect() const;
 
+	inline bool HasAttribute(SpellAttr0 attribute)  const { return !!(Attributes & attribute); }
+	inline bool HasAttribute(SpellAttr1 attribute)  const { return !!(AttributesEx & attribute); }
+	inline bool HasAttribute(SpellAttr2 attribute)  const { return !!(AttributesEx2 & attribute); }
+	inline bool HasAttribute(SpellAttr3 attribute)  const { return !!(AttributesEx3 & attribute); }
+	inline bool HasAttribute(SpellAttr4 attribute)  const { return !!(AttributesEx4 & attribute); }
+	inline bool HasAttribute(SpellAttr5 attribute)  const { return !!(AttributesEx5 & attribute); }
+	inline bool HasAttribute(SpellAttr6 attribute)  const { return !!(AttributesEx6 & attribute); }
+	inline bool HasAttribute(SpellAttr7 attribute)  const { return !!(AttributesEx7 & attribute); }
+	inline bool HasAttribute(SpellAttr8 attribute)  const { return !!(AttributesEx8 & attribute); }
+	inline bool HasAttribute(SpellAttr9 attribute)  const { return !!(AttributesEx9 & attribute); }
+	inline bool HasAttribute(SpellAttr10 attribute) const { return !!(AttributesEx10 & attribute); }
+	inline bool HasAttribute(SpellCustomAttributes customAttribute) const { return !!(AttributesCu & customAttribute); }
+
     bool IsExplicitDiscovery() const;
     bool IsLootCrafting() const;
     bool IsQuestTame() const;
@@ -448,6 +464,7 @@ public:
     bool NeedsToBeTriggeredByCaster(SpellInfo const* triggeringSpell) const;
 
     bool IsPassive() const;
+	bool IsRaidMarker() const;	
     bool IsAutocastable() const;
     bool IsStackableWithRanks() const;
     bool IsPassiveStackableWithRanks() const;
@@ -461,6 +478,7 @@ public:
     bool IsPositive() const;
     bool IsPositiveEffect(uint8 effIndex) const;
     bool IsChanneled() const;
+    bool IsMoveAllowedChannel() const;
     bool NeedsComboPoints() const;
     bool IsBreakingStealth() const;
     bool IsRangedWeaponSpell() const;
@@ -528,6 +546,7 @@ public:
 
     // unloading helpers
     void _UnloadImplicitTargetConditionLists();
+
 };
 
 #endif // _SPELLINFO_H

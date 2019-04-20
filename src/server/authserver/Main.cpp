@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2008-2014 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2011-2016 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2011-2017 ArkCORE <http://www.arkania.net/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -35,6 +35,7 @@
 #include "Common.h"
 #include "Database/DatabaseEnv.h"
 #include "Configuration/Config.h"
+#include "GitRevision.h"
 #include "Log.h"
 #include "SystemConfig.h"
 #include "Util.h"
@@ -112,7 +113,7 @@ extern int main(int argc, char** argv)
         return 1;
     }
 
-    TC_LOG_INFO("server.authserver", "%s (authserver)", _FULLVERSION);
+    TC_LOG_INFO("server.authserver", "%s (authserver)", GitRevision::GetFullVersion());
     TC_LOG_INFO("server.authserver", " ");
     TC_LOG_INFO("server.authserver", " A World of Warcraft Cataclsym 4.3.4 Emulator    ");
     TC_LOG_INFO("server.authserver", "       _/_/              _/          _/_/_/    _/_/    _/_/_/    _/_/_/_/  ");
@@ -120,7 +121,7 @@ extern int main(int argc, char** argv)
     TC_LOG_INFO("server.authserver", "   _/_/_/_/  _/_/      _/_/      _/        _/    _/  _/_/_/    _/_/_/      ");
     TC_LOG_INFO("server.authserver", "  _/    _/  _/        _/  _/    _/        _/    _/  _/    _/  _/           ");
     TC_LOG_INFO("server.authserver", " _/    _/  _/        _/    _/    _/_/_/    _/_/    _/    _/  _/_/_/_/      ");
-    TC_LOG_INFO("server.authserver", " Arkania Community (c) 2016!                         <http://arkania.net/> ");
+    TC_LOG_INFO("server.authserver", " Arkania Community (c) 2018!                         <http://arkania.net/> ");
     TC_LOG_INFO("server.authserver", " ");    
     TC_LOG_INFO("server.authserver", "<Ctrl-C> to stop.\n");
     TC_LOG_INFO("server.authserver", "Using configuration file %s.", configFile);

@@ -32,6 +32,21 @@ bool _SpellScript::_Validate(SpellInfo const* entry)
     return true;
 }
 
+bool _SpellScript::_ValidateSpellInfo(uint32 const* begin, uint32 const* end)
+{
+    bool allValid = true;
+    while (begin != end)
+    {
+        if (!sSpellMgr->GetSpellInfo(*begin))
+        {
+            TC_LOG_ERROR("scripts.spells", "_SpellScript::ValidateSpellInfo: Spell %u does not exist.", *begin);
+            allValid = false;
+        }
+        ++begin;
+    }
+    return allValid;
+}
+
 void _SpellScript::_Register()
 {
     m_currentScriptState = SPELL_SCRIPT_STATE_REGISTRATION;
@@ -88,7 +103,7 @@ uint8 _SpellScript::EffectHook::GetAffectedEffectsMask(SpellInfo const* spellEnt
 
 bool _SpellScript::EffectHook::IsEffectAffected(SpellInfo const* spellEntry, uint8 effIndex)
 {
-    return GetAffectedEffectsMask(spellEntry) & 1<<effIndex;
+	return (GetAffectedEffectsMask(spellEntry) & 1 << effIndex) != 0;
 }
 
 std::string _SpellScript::EffectHook::EffIndexToString()
@@ -163,6 +178,16 @@ void SpellScript::CastHandler::Call(SpellScript* spellScript)
     (spellScript->*pCastHandlerScript)();
 }
 
+SpellScript::DispelHandler::DispelHandler(SpellDispelFnType _pDispelHandlerScript)
+{
+    pDispelHandlerScript = _pDispelHandlerScript;
+}
+
+void SpellScript::DispelHandler::Call(SpellScript* spellScript)
+{
+    (spellScript->*pDispelHandlerScript)();
+}
+
 SpellScript::CheckCastHandler::CheckCastHandler(SpellCheckCastFnType checkCastHandlerScript)
 {
     _checkCastHandlerScript = checkCastHandlerScript;
@@ -219,8 +244,12 @@ bool SpellScript::TargetHook::CheckEffect(SpellInfo const* spellEntry, uint8 eff
     if (!targetType)
         return false;
 
-    if (spellEntry->Effects[effIndex].TargetA.GetTarget() != targetType &&
-        spellEntry->Effects[effIndex].TargetB.GetTarget() != targetType)
+	SpellEffectInfo const* effect = &spellEntry->Effects[effIndex];
+	if (!effect)
+		return false;
+
+    if (effect->TargetA.GetTarget() != targetType &&
+		effect->TargetB.GetTarget() != targetType)
         return false;
 
     SpellImplicitTargetInfo targetInfo(targetType);

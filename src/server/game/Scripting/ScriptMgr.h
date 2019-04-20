@@ -385,6 +385,12 @@ class ItemScript : public ScriptObject
         // Called when a player accepts a quest from the item.
         virtual bool OnQuestAccept(Player* /*player*/, Item* /*item*/, Quest const* /*quest*/) { return false; }
 
+        // Called when a player completes all quest-objectives with the item.
+        virtual bool OnQuestObjectiveComplete(Player* /*player*/, Item* /*item*/, Quest const* /*quest*/) { return false; }
+        
+        // Called when a player reward a quest from the item.
+        virtual bool OnQuestReward(Player* /*player*/, Item* /*item*/, Quest const* /*quest*/, uint32 /*opt*/) { return false; }
+
         // Called when a player uses the item.
         virtual bool OnUse(Player* /*player*/, Item* /*item*/, SpellCastTargets const& /*targets*/) { return false; }
 
@@ -446,8 +452,8 @@ class CreatureScript : public UnitScript, public UpdatableScript<Creature>
         // Called when a player selects a quest in the creature's quest menu.
         virtual bool OnQuestSelect(Player* /*player*/, Creature* /*creature*/, Quest const* /*quest*/) { return false; }
 
-        // Called when a player completes a quest with the creature.
-        virtual bool OnQuestComplete(Player* /*player*/, Creature* /*creature*/, Quest const* /*quest*/) { return false; }
+        // Called when a player completes all quest-objectives with the creature.
+        virtual bool OnQuestObjectiveComplete(Player* /*player*/, Creature* /*creature*/, Quest const* /*quest*/) { return false; }
 
         // Called when a player selects a quest reward.
         virtual bool OnQuestReward(Player* /*player*/, Creature* /*creature*/, Quest const* /*quest*/, uint32 /*opt*/) { return false; }
@@ -484,6 +490,9 @@ class GameObjectScript : public ScriptObject, public UpdatableScript<GameObject>
         // Called when a player accepts a quest from the gameobject.
         virtual bool OnQuestAccept(Player* /*player*/, GameObject* /*go*/, Quest const* /*quest*/) { return false; }
 
+        // Called when a player completes all quest-objectives with the gameobject.
+        virtual bool OnQuestObjectiveComplete(Player* /*player*/, GameObject* /*go*/, Quest const* /*quest*/) { return false; }
+        
         // Called when a player selects a quest reward.
         virtual bool OnQuestReward(Player* /*player*/, GameObject* /*go*/, Quest const* /*quest*/, uint32 /*opt*/) { return false; }
 
@@ -771,6 +780,12 @@ class PlayerScript : public UnitScript
 
         // Called when a player changes to a new map (after moving to new map)
         virtual void OnMapChanged(Player* /*player*/) { }
+
+        // Called when a player remove a quest
+        virtual void OnQuestRemove(Player* /*player*/, uint32 /*questId*/) { }
+
+        // Called after a player's quest status has been changed
+        virtual void OnQuestStatusChange(Player* /*player*/, uint32 /*questId*/, QuestStatus /*status*/) { }
 };
 
 class GuildScript : public ScriptObject
@@ -922,10 +937,17 @@ class ScriptMgr
 
         InstanceScript* CreateInstanceData(InstanceMap* map);
 
+    public: /* CreatureScript GameObjectScript ItemScript */
+        bool OnQuestAccept(Player * player, Object * questGiverObject, Quest const * quest);
+        bool OnQuestObjectiveComplete(Player * player, Object * questGiverObject, Quest const * quest);
+        bool OnQuestReward(Player * player, Object * questGiverObject, Quest const * quest, uint32 opt);
+
     public: /* ItemScript */
 
         bool OnDummyEffect(Unit* caster, uint32 spellId, SpellEffIndex effIndex, Item* target);
         bool OnQuestAccept(Player* player, Item* item, Quest const* quest);
+        bool OnQuestObjectiveComplete(Player* player, Item* item, Quest const* quest);
+        bool OnQuestReward(Player* player, Item* item, Quest const* quest, uint32 opt);
         bool OnItemUse(Player* player, Item* item, SpellCastTargets const& targets);
         bool OnItemExpire(Player* player, ItemTemplate const* proto);
         bool OnItemRemove(Player* player, Item* item);
@@ -938,7 +960,7 @@ class ScriptMgr
         bool OnGossipSelectCode(Player* player, Creature* creature, uint32 sender, uint32 action, const char* code);
         bool OnQuestAccept(Player* player, Creature* creature, Quest const* quest);
         bool OnQuestSelect(Player* player, Creature* creature, Quest const* quest);
-        bool OnQuestComplete(Player* player, Creature* creature, Quest const* quest);
+        bool OnQuestObjectiveComplete(Player* player, Creature* creature, Quest const* quest);
         bool OnQuestReward(Player* player, Creature* creature, Quest const* quest, uint32 opt);
         uint32 GetDialogStatus(Player* player, Creature* creature);
         CreatureAI* GetCreatureAI(Creature* creature);
@@ -951,6 +973,7 @@ class ScriptMgr
         bool OnGossipSelect(Player* player, GameObject* go, uint32 sender, uint32 action);
         bool OnGossipSelectCode(Player* player, GameObject* go, uint32 sender, uint32 action, const char* code);
         bool OnQuestAccept(Player* player, GameObject* go, Quest const* quest);
+        bool OnQuestObjectiveComplete(Player* player, GameObject* go, Quest const* quest);
         bool OnQuestReward(Player* player, GameObject* go, Quest const* quest, uint32 opt);
         uint32 GetDialogStatus(Player* player, GameObject* go);
         void OnGameObjectDestroyed(GameObject* go, Player* player);
@@ -1047,6 +1070,8 @@ class ScriptMgr
         void OnPlayerSave(Player* player);
         void OnPlayerBindToInstance(Player* player, Difficulty difficulty, uint32 mapid, bool permanent);
         void OnPlayerUpdateZone(Player* player, uint32 newZone, uint32 newArea);
+        void OnQuestRemove(Player* player, uint32 questId);
+        void OnQuestStatusChange(Player* player, uint32 questId, QuestStatus status);
 
     public: /* GuildScript */
 
@@ -1093,5 +1118,80 @@ class ScriptMgr
         //atomic op counter for active scripts amount
         ACE_Atomic_Op<ACE_Thread_Mutex, long> _scheduledScripts;
 };
+
+template <class S>
+class GenericSpellScriptLoader : public SpellScriptLoader
+{
+public:
+    GenericSpellScriptLoader(char const* name) : SpellScriptLoader(name) { }
+    SpellScript* GetSpellScript() const override { return new S(); }
+};
+#define RegisterSpellScript(spell_script) new GenericSpellScriptLoader<spell_script>(#spell_script)
+
+template <class A>
+class GenericAuraScriptLoader : public SpellScriptLoader
+{
+public:
+    GenericAuraScriptLoader(char const* name) : SpellScriptLoader(name) { }
+    AuraScript* GetAuraScript() const override { return new A(); }
+};
+#define RegisterAuraScript(aura_script) new GenericAuraScriptLoader<aura_script>(#aura_script)
+
+template <class S, class A>
+class GenericSpellAndAuraScriptLoader : public SpellScriptLoader
+{
+public:
+    GenericSpellAndAuraScriptLoader(char const* name) : SpellScriptLoader(name) { }
+    SpellScript* GetSpellScript() const override { return new S(); }
+    AuraScript* GetAuraScript() const override { return new A(); }
+};
+#define RegisterSpellAndAuraScriptPair(spell_script, aura_script) new GenericSpellAndAuraScriptLoader<spell_script, aura_script>(#spell_script)
+
+template <class AI>
+class GenericCreatureScript : public CreatureScript
+{
+public:
+    GenericCreatureScript(char const* name) : CreatureScript(name) { }
+    CreatureAI* GetAI(Creature* me) const override { return new AI(me); }
+};
+#define RegisterCreatureAI(ai_name) new GenericCreatureScript<ai_name>(#ai_name)
+
+template <class AI, AI*(*AIFactory)(Creature*)>
+class FactoryCreatureScript : public CreatureScript
+{
+public:
+    FactoryCreatureScript(char const* name) : CreatureScript(name) { }
+    CreatureAI* GetAI(Creature* me) const override { return AIFactory(me); }
+};
+#define RegisterCreatureAIWithFactory(ai_name, factory_fn) new FactoryCreatureScript<ai_name, &factory_fn>(#ai_name)
+
+template <class AI>
+class GenericGameObjectScript : public GameObjectScript
+{
+public:
+    GenericGameObjectScript(char const* name) : GameObjectScript(name) { }
+    GameObjectAI* GetAI(GameObject* go) const override { return new AI(go); }
+};
+#define RegisterGameObjectAI(ai_name) new GenericGameObjectScript<ai_name>(#ai_name)
+
+/*
+template <class AI>
+class GenericAreaTriggerEntityScript : public AreaTriggerEntityScript
+{
+public:
+    GenericAreaTriggerEntityScript(char const* name) : AreaTriggerEntityScript(name) { }
+    AreaTriggerAI* GetAI(AreaTrigger* at) const override { return new AI(at); }
+};
+#define RegisterAreaTriggerAI(ai_name) new GenericAreaTriggerEntityScript<ai_name>(#ai_name)
+*/
+
+template <class AI>
+class GenericInstanceMapScript : public InstanceMapScript
+{
+public:
+    GenericInstanceMapScript(char const* name, uint32 mapId) : InstanceMapScript(name, mapId) { }
+    InstanceScript* GetInstanceScript(InstanceMap* map) const override { return new AI(map); }
+};
+#define RegisterInstanceScript(ai_name, mapId) new GenericInstanceMapScript<ai_name>(#ai_name, mapId)
 
 #endif

@@ -643,6 +643,13 @@ struct AchievementCriteriaEntry
     uint32 additionalConditionValue[MAX_ADDITIONAL_CRITERIA_CONDITIONS - 1]; // 21-22 WTF one column was cut off here in 4.3.4
 };
 
+struct AnimKitEntry
+{
+    uint32      ID;                                         // 0
+    //uint32      OneShotDuration;                          // 1
+    //uint32      OneShotStopAnimKitID;                     // 2
+};
+
 struct AreaTableEntry
 {
     uint32  ID;                                             // 0
@@ -710,9 +717,9 @@ struct AreaTriggerEntry
     float   x;                                              // 2        m_x
     float   y;                                              // 3        m_y
     float   z;                                              // 4        m_z
-    //uint32                                                // 5
-    //uint32                                                // 6
-    //uint32                                                // 7
+    uint32  unk;                                            // 5 seen values are 0, 1 or 2
+    uint32  phaseId;                                        // 6
+    uint32  phaseGroup;                                     // 7
     float   radius;                                         // 8        m_radius
     float   box_x;                                          // 9        m_box_length
     float   box_y;                                          // 10       m_box_width
@@ -1145,7 +1152,7 @@ struct FactionTemplateEntry
         }
         return (hostileMask & entry.ourMask) != 0;
     }
-    bool IsHostileToPlayers() const { return (hostileMask & FACTION_MASK_PLAYER) !=0; }
+    bool IsHostileToPlayers() const { return (hostileMask & FACTION_MASK_PLAYER) != 0; }
     bool IsNeutralToAll() const
     {
         for (int i = 0; i < MAX_FACTION_RELATIONS; ++i)
@@ -1154,6 +1161,7 @@ struct FactionTemplateEntry
         return hostileMask == 0 && friendlyMask == 0;
     }
     bool IsContestedGuardFaction() const { return (factionFlags & FACTION_TEMPLATE_FLAG_CONTESTED_GUARD) != 0; }
+    bool ShouldSparringAttack() const { return (factionFlags & FACTION_TEMPLATE_ENEMY_SPARRING) != 0; }
 };
 
 struct GameObjectDisplayInfoEntry
@@ -1842,6 +1850,27 @@ struct SkillLineAbilityEntry
     uint32    max_value;                                    // 10       m_trivialSkillLineRankHigh
     uint32    min_value;                                    // 11       m_trivialSkillLineRankLow
     uint32    character_points[2];                          // 12-13    m_characterPoints
+};
+
+struct SkillRaceClassInfoEntry
+{
+    //uint32 Id;                                            // 0
+    uint32 SkillId;                                         // 1
+    uint32 RaceMask;                                        // 2
+    uint32 ClassMask;                                       // 3
+    uint32 Flags;                                           // 4
+    //uint32 MinLevel;                                      // 5
+    uint32 SkillTier;                                       // 6
+    //uint32 SkillCostType;                                 // 7
+};
+
+#define MAX_SKILL_STEP 16
+
+struct SkillTiersEntry
+{
+    uint32 Id;                                              // 0
+    //uint32 StepCost[MAX_SKILL_STEP];                      // 1-16
+    uint32 MaxSkill[MAX_SKILL_STEP];                        // 17-32
 };
 
 struct SoundEntriesEntry
@@ -2680,5 +2709,5 @@ typedef std::vector<TaxiPathNodeList> TaxiPathNodesByPath;
 
 #define TaxiMaskSize 114
 typedef uint8 TaxiMask[TaxiMaskSize];
-typedef std::unordered_map<uint32, std::set<uint32>> PhaseGroupContainer;
+typedef std::unordered_map<uint16, std::set<uint16>> PhaseGroupContainer;
 #endif

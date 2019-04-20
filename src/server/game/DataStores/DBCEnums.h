@@ -371,9 +371,15 @@ enum SpawnMask
 
 enum FactionTemplateFlags
 {
-    FACTION_TEMPLATE_FLAG_PVP               = 0x00000800,   // flagged for PvP
-    FACTION_TEMPLATE_FLAG_CONTESTED_GUARD   = 0x00001000,   // faction will attack players that were involved in PvP combats
-    FACTION_TEMPLATE_FLAG_HOSTILE_BY_DEFAULT= 0x00002000
+    FACTION_TEMPLATE_ENEMY_SPARRING_1 = 0x00000008,   // guessed, sparring against 7?
+    FACTION_TEMPLATE_ENEMY_SPARRING_2 = 0x00000010,   // guessed, sparring against sparring?
+    FACTION_TEMPLATE_ENEMY_SPARRING_4 = 0x00000020,   // guessed, sparring against 14?
+    FACTION_TEMPLATE_ENEMY_SPARRING_8 = 0x00000040,   // guessed, sparring between condor/chicken or similar ?
+    FACTION_TEMPLATE_FLAG_PVP = 0x00000800,   // flagged for PvP
+    FACTION_TEMPLATE_FLAG_CONTESTED_GUARD = 0x00001000,   // faction will attack players that were involved in PvP combats
+    FACTION_TEMPLATE_FLAG_HOSTILE_BY_DEFAULT = 0x00002000,
+
+    FACTION_TEMPLATE_ENEMY_SPARRING = FACTION_TEMPLATE_ENEMY_SPARRING_1 & FACTION_TEMPLATE_ENEMY_SPARRING_2 & FACTION_TEMPLATE_ENEMY_SPARRING_4
 };
 
 enum FactionMasks
@@ -439,6 +445,17 @@ enum MountFlags
     MOUNT_FLAG_CAN_PITCH                = 0x4,                    // client checks MOVEMENTFLAG2_FULL_SPEED_PITCHING
     MOUNT_FLAG_CAN_SWIM                 = 0x8,                    // client checks MOVEMENTFLAG_SWIMMING
 };
+
+enum SkillRaceClassInfoFlags
+{
+    SKILL_FLAG_NO_SKILLUP_MESSAGE       = 0x2,
+    SKILL_FLAG_ALWAYS_MAX_VALUE         = 0x10,
+    SKILL_FLAG_UNLEARNABLE              = 0x20,     // Skill can be unlearned
+    SKILL_FLAG_INCLUDE_IN_SORT          = 0x80,     // Spells belonging to a skill with this flag will additionally compare skill ids when sorting spellbook in client
+    SKILL_FLAG_NOT_TRAINABLE            = 0x100,
+    SKILL_FLAG_MONO_VALUE               = 0x400     // Skill always has value 1
+};
+
 
 enum SpellCategoryFlags
 {

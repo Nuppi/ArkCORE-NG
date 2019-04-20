@@ -37,7 +37,16 @@ enum GenericData
     SPELL_MECHANICAL_DRAGONLING = 4073,
     SPELL_MITHRIL_MECHANICAL_DRAGONLING = 12749,
     SPELL_GOBLIN_JUMPER_CABLES_FAIL = 8338,
-    SPELL_GOBLIN_JUMPER_CABLES_XL_FAIL = 23055
+    SPELL_GOBLIN_JUMPER_CABLES_XL_FAIL = 23055,
+    SPELL_UNSURPASSED_VIGOR = 25733,
+    SPELL_FLASK_OF_ENHANCEMENT_STR = 79638,
+    SPELL_FLASK_OF_ENHANCEMENT_AP = 79639,
+    SPELL_FLASK_OF_ENHANCEMENT_SP = 79640,
+    SPELL_GROUNDED_PLASMA_SHIELD_SUCCESS = 82627, // Proc 18k absorb
+    SPELL_REVERSED_SHIELD = 82406, // Debuff Side Effect 1
+    SPELL_MAGNETIZED = 82403, // Debuff Side Effect 2
+    SPELL_PAINFUL_SHOCK = 82407, // Debuff Side Effect 3 Active le buff 4
+    SPELL_PLASMA_MISFIRE = 94549, // Debuff Side Effect 4
 };
 
 // 23074 23075 23076 23133 
@@ -2723,6 +2732,325 @@ public:
     }
 };
 
+// 101056
+class spell_item_dragonwrath_tarecgosas_rest final : public SpellScriptLoader
+{
+public:
+    spell_item_dragonwrath_tarecgosas_rest() : SpellScriptLoader("spell_item_dragonwrath_tarecgosas_rest") { }
+
+    class script_impl final : public AuraScript
+    {
+        PrepareAuraScript(script_impl)
+
+        enum
+        {
+            SPELL_TARCEGOSA_PERIODIC_PROC = 101085,
+        };
+
+        bool CheckProc(ProcEventInfo &eventInfo)
+        {
+
+            if (!eventInfo.GetSpellInfo())
+                return false;
+
+            if (!eventInfo.GetActionTarget() || !GetCaster())
+                return false;
+
+            if (GetCaster() == eventInfo.GetActionTarget())
+                return false;
+
+            return true;
+        }
+
+        void OnProc(AuraEffect const * aurEff, ProcEventInfo &eventInfo)
+        {
+            PreventDefaultAction();
+            uint32 triggered_spell_id = 0;
+            int32 basepoints0 = 0;
+            auto caster = GetCaster();
+            auto target = eventInfo.GetActionTarget();
+
+            if (eventInfo.GetTypeMask() & PROC_FLAG_DONE_PERIODIC)
+            {
+                if (!roll_chance_i(10))
+                    return;
+
+                basepoints0 = eventInfo.GetDamageInfo()->GetDamage();
+                triggered_spell_id = SPELL_TARCEGOSA_PERIODIC_PROC;
+            }
+            else
+            {
+                if (!roll_chance_i(5))
+                    return;
+
+                triggered_spell_id = eventInfo.GetSpellInfo()->Id;
+
+                // Probably all spells with custom damage handling will have to be moved here(?):
+                // Fulmination              Improved Devouring Plague
+                if (triggered_spell_id == 88767 || triggered_spell_id == 63675)
+                    basepoints0 = eventInfo.GetDamageInfo()->GetDamage();
+            }
+
+            if (basepoints0)
+                caster->CastCustomSpell(target, triggered_spell_id, &basepoints0, NULL, NULL, true, nullptr, aurEff, caster->GetGUID());
+            else
+                caster->CastSpell(target, triggered_spell_id, true, nullptr, aurEff, caster->GetGUID());
+        }
+
+        void Register() final
+        {
+            DoCheckProc += AuraCheckProcFn(script_impl::CheckProc);
+            OnEffectProc += AuraEffectProcFn(script_impl::OnProc, EFFECT_0, SPELL_AURA_PROC_TRIGGER_SPELL_COPY);
+        }
+    };
+
+    AuraScript * GetAuraScript() const final
+    {
+        return new script_impl;
+    }
+};
+
+enum GoladandTiriosh
+{
+	SPELL_GOLADANDTIRIOSH_SOTD_STACK		= 109941,
+	SPELL_GOLADANDTIRIOSH_FOTD_BUFF			= 109949,
+	SPELL_GOLADANDTIRIOSH_FOTD_GIVE_CP		= 109950,
+};
+
+// 109939
+class spell_item_fangs_of_the_father : public SpellScriptLoader
+{
+    public:
+        spell_item_fangs_of_the_father() : SpellScriptLoader("spell_item_fangs_of_the_father") { }
+
+        class spell_item_fangs_of_the_father_AuraScript : public AuraScript
+        {
+            PrepareAuraScript(spell_item_fangs_of_the_father_AuraScript);
+
+
+			//Dont need a load check to see if the player is a rogue or not, the spec check will take care of that.
+
+            void HandleProc(AuraEffect const* aurEff, ProcEventInfo& eventInfo)
+            {
+                PreventDefaultAction();
+				uint32 baseprocchance;
+				uint32 randompercent = urand(1, 100000);
+
+				//______________________Calculate base proc chance depending on rogue's spec______________________Source @ http://www.wowhead.com/item=77949 in comments
+				if (GetTarget()->ToPlayer()->GetPrimaryTalentTree(GetTarget()->ToPlayer()->GetActiveSpec()) == TALENT_TREE_ROGUE_ASSASSINATION)
+					baseprocchance = 23139;
+				else if (GetTarget()->ToPlayer()->GetPrimaryTalentTree(GetTarget()->ToPlayer()->GetActiveSpec()) == TALENT_TREE_ROGUE_COMBAT)
+					baseprocchance = 9438; //Source @ http://www.wowhead.com/item=77949 in comments
+				else if (GetTarget()->ToPlayer()->GetPrimaryTalentTree(GetTarget()->ToPlayer()->GetActiveSpec()) == TALENT_TREE_ROGUE_SUBTLETY)
+					baseprocchance = 28223; //Source @ http://www.wowhead.com/item=77949 in comments
+				else
+					baseprocchance = 0; //No spec detected, 0% chance to proc daggers
+				
+				//______________________Recalculate proc chance if needed depending on what level the targets level is______________________
+				if (eventInfo.GetProcTarget()->getLevel() == 89)
+					baseprocchance = baseprocchance*0.9;
+				else if (eventInfo.GetProcTarget()->getLevel() == 90)
+					baseprocchance = baseprocchance*0.8;
+				else if (eventInfo.GetProcTarget()->getLevel() == 91)
+					baseprocchance = baseprocchance*0.7;
+				else if (eventInfo.GetProcTarget()->getLevel() == 92)
+					baseprocchance = baseprocchance*0.6;
+				else if (eventInfo.GetProcTarget()->getLevel() >= 93)
+					baseprocchance = baseprocchance*0.5;
+				//if the target is not level 89,90,91,92,93+, then assume the target is level 88 or lower, no need to lower baseprocchance.
+
+				//______________________If everything checks out, give the player a stack______________________
+				if (randompercent < baseprocchance){
+					GetTarget()->CastSpell(GetTarget(), SPELL_GOLADANDTIRIOSH_SOTD_STACK, true, NULL, aurEff);
+					float x = urand(1, 100);
+					if(GetTarget()->GetAura(SPELL_GOLADANDTIRIOSH_SOTD_STACK)->GetStackAmount() == 50){ //if urand = 100, and stacks is at 50(100%) chance proc, then 100 < 100 will be false, therefor we need to add the second OR part
+						if (!GetTarget()->HasAura(SPELL_GOLADANDTIRIOSH_FOTD_BUFF)){
+							GetTarget()->CastSpell(eventInfo.GetProcTarget(), SPELL_GOLADANDTIRIOSH_FOTD_BUFF, true);
+						}
+					}
+					else if (GetTarget()->GetAura(SPELL_GOLADANDTIRIOSH_SOTD_STACK)->GetStackAmount() > 30){
+						if (x < ((float)1/(51-GetTarget()->GetAura(SPELL_GOLADANDTIRIOSH_SOTD_STACK)->GetStackAmount()))*100){
+							if (!GetTarget()->HasAura(SPELL_GOLADANDTIRIOSH_FOTD_BUFF)){
+								GetTarget()->CastSpell(eventInfo.GetProcTarget(), SPELL_GOLADANDTIRIOSH_FOTD_BUFF, true);
+							}
+						}
+						else // to prevent crash
+							return;
+					}
+				}
+			}
+
+            void Register()
+            {
+                OnEffectProc += AuraEffectProcFn(spell_item_fangs_of_the_father_AuraScript::HandleProc, EFFECT_0, SPELL_AURA_PROC_TRIGGER_SPELL);
+            }
+        };
+
+        AuraScript* GetAuraScript() const
+        {
+            return new spell_item_fangs_of_the_father_AuraScript();
+        }
+};
+
+// 109949
+class spell_item_fangs_of_the_father_fury_of_the_destroyer : public SpellScriptLoader
+{
+    public:
+        spell_item_fangs_of_the_father_fury_of_the_destroyer() : SpellScriptLoader("spell_item_fangs_of_the_father_fury_of_the_destroyer") { }
+
+        class spell_item_fangs_of_the_father_fury_of_the_destroyer_AuraScript : public AuraScript
+        {
+            PrepareAuraScript(spell_item_fangs_of_the_father_fury_of_the_destroyer_AuraScript);
+
+			bool Validate(SpellInfo const* /*spell*/)
+            {
+				if (!sSpellMgr->GetSpellInfo(SPELL_GOLADANDTIRIOSH_SOTD_STACK) || !sSpellMgr->GetSpellInfo(SPELL_GOLADANDTIRIOSH_FOTD_BUFF) || !sSpellMgr->GetSpellInfo(SPELL_GOLADANDTIRIOSH_FOTD_GIVE_CP))
+                    return false;
+                return true;
+            }
+
+            void OnRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+            {
+                GetTarget()->RemoveAurasDueToSpell(SPELL_GOLADANDTIRIOSH_SOTD_STACK);
+            }
+
+            void Register()
+            {
+                OnEffectRemove += AuraEffectRemoveFn(spell_item_fangs_of_the_father_fury_of_the_destroyer_AuraScript::OnRemove, EFFECT_1, SPELL_AURA_PROC_TRIGGER_SPELL, AURA_EFFECT_HANDLE_REAL);
+            }
+        };
+
+        AuraScript* GetAuraScript() const
+        {
+            return new spell_item_fangs_of_the_father_fury_of_the_destroyer_AuraScript();
+        }
+};
+
+// 7434 - Fate Rune of Unsurpassed Vigor
+class spell_item_fate_rune_of_unsurpassed_vigor : public SpellScriptLoader
+{
+public:
+    spell_item_fate_rune_of_unsurpassed_vigor() : SpellScriptLoader("spell_item_fate_rune_of_unsurpassed_vigor") { }
+
+    class spell_item_fate_rune_of_unsurpassed_vigor_AuraScript : public AuraScript
+    {
+        PrepareAuraScript(spell_item_fate_rune_of_unsurpassed_vigor_AuraScript);
+
+        bool Validate(SpellInfo const* /*spellInfo*/) override
+        {
+            if (!sSpellMgr->GetSpellInfo(SPELL_UNSURPASSED_VIGOR))
+                return false;
+            return true;
+        }
+
+        void HandleProc(AuraEffect const* /*aurEff*/, ProcEventInfo& /*eventInfo*/)
+        {
+            GetTarget()->CastSpell(GetTarget(), SPELL_UNSURPASSED_VIGOR, true);
+        }
+
+        void Register() override
+        {
+            OnEffectProc += AuraEffectProcFn(spell_item_fate_rune_of_unsurpassed_vigor_AuraScript::HandleProc, EFFECT_0, SPELL_AURA_DUMMY);
+        }
+    };
+
+    AuraScript* GetAuraScript() const override
+    {
+        return new spell_item_fate_rune_of_unsurpassed_vigor_AuraScript();
+    }
+};
+
+// 79637
+class spell_item_flask_of_enhancement : public SpellScriptLoader
+{
+public:
+    spell_item_flask_of_enhancement() : SpellScriptLoader("spell_item_flask_of_enhancement") { }
+
+    class spell_item_flask_of_enhancement_SpellScript : public SpellScript
+    {
+        PrepareSpellScript(spell_item_flask_of_enhancement_SpellScript);
+
+        bool Validate(SpellInfo const* /*spellEntry*/)
+        {
+            if (!sSpellMgr->GetSpellInfo(SPELL_FLASK_OF_ENHANCEMENT_STR) || !sSpellMgr->GetSpellInfo(SPELL_FLASK_OF_ENHANCEMENT_AP) || !sSpellMgr->GetSpellInfo(SPELL_FLASK_OF_ENHANCEMENT_SP))
+                return false;
+            return true;
+        }
+
+        void HandleDummy(SpellEffIndex /*effIndex*/)
+        {
+            Unit* caster = GetCaster();
+            if (caster->GetStat(STAT_AGILITY) > std::max(caster->GetStat(STAT_INTELLECT), caster->GetStat(STAT_STRENGTH))) // Druid CAC
+            {
+                caster->CastSpell(caster, SPELL_FLASK_OF_ENHANCEMENT_AP, true, NULL);
+            }
+            else
+                if (caster->GetStat(STAT_STRENGTH) > std::max(caster->GetStat(STAT_INTELLECT), caster->GetStat(STAT_AGILITY))) // PALA CAC
+                {
+                    caster->CastSpell(caster, SPELL_FLASK_OF_ENHANCEMENT_STR, true, NULL);
+                }
+                else
+                    if (caster->GetStat(STAT_INTELLECT) > std::max(caster->GetStat(STAT_AGILITY), caster->GetStat(STAT_STRENGTH))) // PALA Heal
+                    {
+                        caster->CastSpell(caster, SPELL_FLASK_OF_ENHANCEMENT_SP, true, NULL);
+                    }
+        }
+
+        void Register()
+        {
+            OnEffectHit += SpellEffectFn(spell_item_flask_of_enhancement_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+        }
+    };
+
+    SpellScript* GetSpellScript() const
+    {
+        return new spell_item_flask_of_enhancement_SpellScript();
+    }
+};
+
+// 82626
+class spell_item_grounded_plasma_shield : public SpellScriptLoader
+{
+public:
+    spell_item_grounded_plasma_shield() : SpellScriptLoader("spell_item_grounded_plasma_shield") { }
+
+    class spell_item_grounded_plasma_shield_SpellScript : public SpellScript
+    {
+        PrepareSpellScript(spell_item_grounded_plasma_shield_SpellScript);
+
+        bool Load()
+        {
+            if (GetCastItem())
+                return false;
+            return true;
+        }
+
+        bool Validate(SpellInfo const* /*spell*/)
+        {
+            if (!sSpellMgr->GetSpellInfo(SPELL_GROUNDED_PLASMA_SHIELD_SUCCESS) || !sSpellMgr->GetSpellInfo(SPELL_REVERSED_SHIELD) || !sSpellMgr->GetSpellInfo(SPELL_MAGNETIZED) || !sSpellMgr->GetSpellInfo(SPELL_PAINFUL_SHOCK))
+                return false;
+            return true;
+        }
+
+        void HandleDummy(SpellEffIndex /* effIndex */)
+        {
+            Unit* caster = GetCaster();
+            // Need more random 1/4 bad sideeffect spells
+            caster->CastSpell(caster, roll_chance_i(95) ? SPELL_GROUNDED_PLASMA_SHIELD_SUCCESS : SPELL_REVERSED_SHIELD, true, GetCastItem());
+        }
+
+        void Register()
+        {
+            OnEffectHitTarget += SpellEffectFn(spell_item_grounded_plasma_shield_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+        }
+    };
+
+    SpellScript* GetSpellScript() const
+    {
+        return new spell_item_grounded_plasma_shield_SpellScript();
+    }
+};
+
 void AddSC_item_spell_scripts()
 {
     new spell_item_aegis_of_preservation();
@@ -2784,6 +3112,12 @@ void AddSC_item_spell_scripts()
     new spell_item_unsated_craving();
     new spell_item_unusual_compass();
     new spell_item_vanquished_clutches();
-    
     new spell_magic_eater_food();
+    new spell_item_dragonwrath_tarecgosas_rest();
+    new spell_item_fangs_of_the_father();
+    new spell_item_fangs_of_the_father_fury_of_the_destroyer();
+    new spell_item_fate_rune_of_unsurpassed_vigor();
+    new spell_item_flask_of_enhancement();
+    new spell_item_grounded_plasma_shield();
+
 }
